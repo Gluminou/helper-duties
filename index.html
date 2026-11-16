@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f6b5c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Duties">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Helper Duties</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap" rel="stylesheet">
+<style>
+/* Layout: phone app. Sticky header, one scrolling view, bottom tab bar (Today checklist, Week report, All duties). */
+:root{
+  --bg:#eef2f0; --surface:#ffffff; --ink:#15302a; --muted:#5d706b; --line:#d7e0dd;
+  --accent:#0f6b5c; --accent-soft:#d9eee8; --accent-ink:#ffffff;
+  --done:#1f8a4c; --done-soft:#dff3e6; --miss:#c2412d; --miss-soft:#fbe3de; --warn:#a86a00; --warn-soft:#fbefd4;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif;
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+h1,h2,h3{margin:0;line-height:1.2;text-wrap:balance}
+h1,h2{font-family:var(--f-display)}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(10px + var(--safe-t)) 16px 8px;display:flex;align-items:center;gap:10px}
+.top h1{font-size:22px;flex:1}
+.top .sync{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.dot.ok{background:var(--done)} .dot.busy{background:var(--warn)} .dot.err{background:var(--miss)}
+.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer}
+.iconbtn svg{width:20px;height:20px}
+main{max-width:720px;margin:0 auto;padding:4px 16px calc(96px + var(--safe-b));display:flex;flex-direction:column;gap:14px}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:flex;padding:6px 8px calc(6px + var(--safe-b))}
+.nav button{flex:1;border:0;background:none;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;border-radius:10px}
+.nav button svg{width:24px;height:24px}
+.nav button[aria-current="page"]{color:var(--accent);background:var(--accent-soft)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.banner{padding:12px 14px;border-radius:12px;font-size:14.5px;display:flex;gap:10px;align-items:flex-start}
+.banner.info{background:var(--warn-soft);color:var(--ink)}
+.banner button{margin-left:auto;flex:none}
+.btn{border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:var(--surface);color:var(--accent);border:1px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:default}
+
+/* Today */
+.hero{padding:14px 16px;display:grid;gap:10px}
+.hero .date{font-family:var(--f-display);font-size:24px;font-weight:700}
+.hero .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums}
+.hero .row b{color:var(--ink);font-size:18px}
+.progress{height:12px;border-radius:6px;background:var(--accent-soft);overflow:hidden}
+.progress span{display:block;height:100%;background:var(--accent);border-radius:6px;transition:width .3s}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.pill{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:14px;font-weight:700;cursor:pointer}
+.pill[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.room{overflow:hidden}
+.roomhead{width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;border:0;background:none;cursor:pointer;text-align:left}
+.roomhead h2{font-size:18px;flex:1}
+.roomhead .count{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.roomhead .count.all{color:var(--done);font-weight:700}
+.chev{width:18px;height:18px;transition:transform .2s;color:var(--muted)}
+.room[data-open="false"] .chev{transform:rotate(-90deg)}
+.room[data-open="false"] .tasks{display:none}
+.tasks{border-top:1px solid var(--line)}
+.task{display:grid;grid-template-columns:44px 1fr;gap:4px 10px;padding:10px 14px 10px 10px;border-bottom:1px solid var(--line)}
+.task:last-child{border-bottom:0}
+.check{width:40px;height:40px;border-radius:12px;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;padding:0}
+.check svg{width:24px;height:24px;opacity:0}
+.task.done .check{background:var(--done);border-color:var(--done);color:#fff}
+.task.done .check svg{opacity:1}
+.check:disabled{cursor:default}
+.task.earlier .check{background:var(--done-soft);border-color:var(--done-soft);color:var(--done)}
+.tbody{min-width:0;display:grid;gap:6px}
+.tname{border:0;background:none;padding:0;text-align:left;font-weight:700;cursor:pointer;line-height:1.35}
+.task.done .tname{color:var(--muted)}
+.meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{font-size:12.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.chip.last{background:var(--warn-soft);color:var(--warn)}
+.chip.ok{background:var(--done-soft);color:var(--done)}
+.chip.plain{background:none;border:1px solid var(--line);color:var(--muted);font-weight:400}
+.thumbs{display:flex;gap:4px}
+.thumbs img{width:34px;height:34px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:8px}
+.more{display:none;gap:10px}
+.task[data-open="true"] .more{display:grid}
+.notes{font-size:14.5px;color:var(--ink);display:grid;gap:3px}
+.notes p{margin:0}
+.notes .how{background:var(--warn-soft);padding:6px 10px;border-radius:8px}
+.pics{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.pic{display:grid;gap:4px;justify-items:center;text-align:center;font-size:12.5px;color:var(--muted)}
+.pic img{width:84px;height:84px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:10px}
+.pics h4{grid-column:1/-1;margin:0;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.task.seal{background:var(--warn-soft)}
+.note-box{padding:14px;display:grid;gap:8px}
+.note-box h2{font-size:17px}
+.note-box textarea{width:100%;min-height:64px;font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);resize:vertical}
+.note-box .rowr{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+.note-list{display:grid;gap:6px;font-size:14.5px}
+.note-list div{padding:8px 10px;background:var(--bg);border-radius:8px}
+.note-list time{color:var(--muted);font-size:12.5px;display:block}
+.dayoff{padding:28px 18px;text-align:center;display:grid;gap:8px}
+.dayoff h2{font-size:24px}
+
+/* Week */
+.weekbar{display:flex;align-items:center;gap:8px}
+.weekbar h2{flex:1;text-align:center;font-size:18px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{padding:10px 12px}
+.stat b{display:block;font-family:var(--f-display);font-size:22px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12.5px;color:var(--muted)}
+.grid{padding:4px 0 8px;overflow-x:auto}
+.grid h3{font-size:15px;padding:10px 12px 6px;font-family:var(--f-display)}
+.g{display:grid;grid-template-columns:minmax(120px,1fr) repeat(6,minmax(30px,44px));gap:3px;padding:0 10px;align-items:stretch}
+.g .hd{font-size:11.5px;font-weight:700;color:var(--muted);text-align:center;padding:4px 0}
+.g .hd.today{color:var(--accent)}
+.g .tn{font-size:13px;padding:4px 4px 4px 2px;line-height:1.25;align-self:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cell{border-radius:6px;min-height:30px;display:grid;place-items:center;font-size:11px;font-variant-numeric:tabular-nums;font-weight:700;background:var(--bg);color:var(--muted)}
+.cell.done{background:var(--done-soft);color:var(--done)}
+.cell.miss{background:var(--miss-soft);color:var(--miss)}
+.cell.open{background:var(--accent-soft);color:var(--accent)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);padding:0 4px}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend i{width:14px;height:14px;border-radius:4px;display:inline-block}
+.monthly{padding:12px 14px;display:grid;gap:6px;font-size:14.5px}
+.monthly div{display:flex;justify-content:space-between;gap:10px}
+
+/* All duties */
+.rules{padding:12px 14px;border-left:4px solid var(--accent)}
+.rules ul{margin:6px 0 0;padding-left:20px;display:grid;gap:3px;font-size:14.5px}
+.search{width:100%;font:inherit;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+.bars{padding:12px 14px;display:grid;gap:7px}
+.bar{display:grid;grid-template-columns:112px 1fr 84px;gap:8px;align-items:center;font-size:13.5px}
+.track{display:block;height:9px;background:var(--accent-soft);border-radius:5px;overflow:hidden}
+.fill{display:block;height:100%;background:var(--accent)}
+.bar .n{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* Settings sheet */
+.sheet{position:fixed;inset:0;z-index:10;background:rgba(10,25,20,.45);display:none;align-items:flex-end;justify-content:center}
+.sheet[data-open="true"]{display:flex}
+.sheet .panel{background:var(--surface);width:100%;max-width:560px;border-radius:18px 18px 0 0;padding:18px 18px calc(18px + var(--safe-b));display:grid;gap:12px;max-height:90%;overflow:auto}
+.sheet label{font-weight:700;font-size:14px}
+.sheet input{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.sheet p{margin:0;font-size:14.5px;color:var(--muted)}
+.sheet .rowr{display:flex;gap:8px;flex-wrap:wrap}
+.msg{font-size:14px}
+.msg.err{color:var(--miss)} .msg.ok{color:var(--done)}
+.empty{color:var(--muted);text-align:center;padding:18px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1 id="title">Today</h1>
+  <span class="sync" id="sync"><span class="dot" id="syncDot"></span><span id="syncText"></span></span>
+  <button class="iconbtn" id="refreshBtn" aria-label="Refresh">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+  </button>
+  <button class="iconbtn" id="settingsBtn" aria-label="Settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  </button>
+</header>
+
+<main id="view"></main>
+
+<nav class="nav" aria-label="Sections">
+  <button data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="m8 12 3 3 5-6"/></svg>Today</button>
+  <button data-tab="week"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2"/></svg>Week</button>
+  <button data-tab="duties"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>All duties</button>
+</nav>
+
+<div class="sheet" id="sheet" data-open="false" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="panel">
+    <h2 id="sheetTitle">Settings</h2>
+    <p>The helper's phone needs a GitHub key so her ticks are saved. Madam and sir's phones don't need a key: they can see everything without one.</p>
+    <label for="tokenInput">GitHub key for this phone</label>
+    <input id="tokenInput" type="password" autocomplete="off" placeholder="github_pat_…">
+    <div class="rowr">
+      <button class="btn" id="saveToken">Save key</button>
+      <button class="btn ghost" id="removeToken">Remove key</button>
+      <button class="btn ghost" id="closeSheet">Close</button>
+    </div>
+    <p class="msg" id="tokenMsg"></p>
+    <p id="aboutLine"></p>
+  </div>
+</div>
+
+<script>
+/* ---------- config ---------- */
+const APP_VERSION="202611161304";
+const REPO="Gluminou/helper-duties", BRANCH="log";
+const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const SHORT=["Mon","Tue","Wed","Thu","Fri","Sat"];
+const PIC={"alcohol-spray":"Alcohol spray","axion-dish-soap":"Axion dish soap","baby-hanger":"Baby hanger","baby-laundry-detergent":"Baby laundry detergent","clorox-bleach":"Clorox bleach","dettol-floor-cleaner":"Dettol floor cleaner","dettol-wipes":"Dettol wipes","drying-rack":"Drying rack","duck-toilet-cleaner":"Duck toilet cleaner","hand-wash-basin":"Hand wash in basin","hoover":"Hoover","hot-water":"Hot water","kq-laundry-detergent":"KQ laundry detergent","laundry-pods":"Laundry pods","leather-cleaner":"Leather cleaner","microfibre-cloth":"Cloth","mr-muscle-glass-cleaner":"Mr Muscle glass cleaner","mr-muscle-kitchen-spray":"Mr Muscle kitchen spray","pipe-cleaner":"Pipe cleaner","rubbish-bag":"Rubbish bag","spin-mop-and-bucket":"Mop and bucket","sponge":"Sponge","tissue-box":"Tissue box","toilet-brush":"Toilet brush","visual-check":"Check with your eyes","walch-bathroom-cleaner":"Walch bathroom cleaner","washing-machine":"Washing machine","wooden-hanger":"Wooden hanger"};
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const stamp=d=>`${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const monthKey=s=>s.slice(0,7);
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const dayIdx=d=>(d.getDay()+6)%7; // Mon=0 … Sun=6
+const monday=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());return addDays(x,-dayIdx(x))};
+const fmtDay=s=>{const d=new Date(s.slice(0,10)+"T00:00");return SHORT[dayIdx(d)]||"Sun"};
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const b64enc=s=>{const u=new TextEncoder().encode(s);let bin="";for(let i=0;i<u.length;i+=8192)bin+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(bin)};
+const b64dec=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g,"")),c=>c.charCodeAt(0)));
+
+/* ---------- schedule logic ---------- */
+// A task's week is Mon-Sat split into slots (from the box borders in the duty list). It must be done once per slot.
+function slots(t){const out=[];let s=0;for(const n of t.windows){out.push([s,s+n-1]);s+=n}return out}
+function slotFor(t,date){ // returns {from,to,label,last} as Date objects for the slot that holds date
+  if(t.monthly){const f=new Date(date.getFullYear(),date.getMonth(),1),to=new Date(date.getFullYear(),date.getMonth()+1,0);return{from:f,to,label:"This month",last:ymd(to)===ymd(date)}}
+  const i=dayIdx(date); if(i>5) return null;
+  const m=monday(date); const sl=slots(t).find(([a,b])=>i>=a&&i<=b);
+  const from=addDays(m,sl[0]),to=addDays(m,sl[1]);
+  let label; const n=t.windows.length;
+  if(sl[0]===sl[1]) label="Today";
+  else if(n===1) label="Any day this week";
+  else label=`${SHORT[sl[0]]} or ${SHORT[sl[1]]}`.replace(/^(\w+) or (\w+)$/,(x,a,b)=>sl[1]-sl[0]>1?`${a} to ${b}`:x);
+  return{from,to,label,last:sl[0]!==sl[1]&&i===sl[1]};
+}
+function doneIn(id,from,to){const a=ymd(from),b=ymd(to);return (S.checks[id]||[]).filter(s=>s.slice(0,10)>=a&&s.slice(0,10)<=b).sort()}
+function freqText(t){
+  if(t.monthly) return "Once a month";
+  const n=t.windows.length;
+  if(n===6) return "Every day";
+  if(n===1) return "Once a week";
+  return `${n} times a week`;
+}
+function slotText(t){
+  if(t.monthly||t.windows.length===6||t.windows.length===1) return "";
+  return slots(t).map(([a,b])=>b-a>1?`${SHORT[a]} to ${SHORT[b]}`:`${SHORT[a]} or ${SHORT[b]}`).join(" · ");
+}
+
+/* ---------- state ---------- */
+const S={tab:"today",rooms:[],all:[],checks:{},notes:[],remote:{},pending:[],token:store.get("hd-token"),
+  open:JSON.parse(store.get("hd-open")||"{}"),filter:"todo",week:0,dq:"",dview:"rooms",sync:"idle",syncMsg:"",loaded:false};
+try{S.pending=JSON.parse(store.get("hd-pending")||"[]")}catch(e){S.pending=[]}
+
+function rebuild(){ // merge remote months + pending ops
+  const checks={},notes=[];
+  for(const m of Object.values(S.remote)){
+    for(const [id,arr] of Object.entries(m.checks||{})) (checks[id]=checks[id]||[]).push(...arr);
+    notes.push(...(m.notes||[]));
+  }
+  for(const op of S.pending){
+    if(op.op==="add"){(checks[op.id]=checks[op.id]||[]); if(!checks[op.id].includes(op.ts)) checks[op.id].push(op.ts)}
+    else if(op.op==="del"&&checks[op.id]) checks[op.id]=checks[op.id].filter(s=>s!==op.ts);
+    else if(op.op==="note") notes.push({at:op.ts,text:op.text});
+  }
+  S.checks=checks; S.notes=notes.sort((a,b)=>a.at<b.at?1:-1);
+}
+
+/* ---------- GitHub storage ---------- */
+// Ticks live in log/YYYY-MM.json on the "log" branch, so saving never rebuilds the app.
+function headers(){const h={"Accept":"application/vnd.github+json"};if(S.token)h.Authorization="Bearer "+S.token;return h}
+async function readMonth(mk){
+  const url=`https://api.github.com/repos/${REPO}/contents/log/${mk}.json?ref=${BRANCH}&t=${Date.now()}`;
+  let r=await fetch(url,{headers:headers(),cache:"no-store"});
+  if(r.status===404) return {data:{checks:{},notes:[]},sha:null};
+  if(r.status===403||r.status===429){ // rate limited without a key: fall back to the raw file
+    const raw=await fetch(`https://raw.githubusercontent.com/${REPO}/${BRANCH}/log/${mk}.json?t=${Date.now()}`,{cache:"no-store"});
+    if(raw.status===404) return {data:{checks:{},notes:[]},sha:null};
+    if(!raw.ok) throw new Error("read "+raw.status);
+    return {data:await raw.json(),sha:undefined};
+  }
+  if(!r.ok) throw new Error("read "+r.status);
+  const j=await r.json(); return {data:JSON.parse(b64dec(j.content)),sha:j.sha};
+}
+function monthsNeeded(){
+  const set=new Set();const now=new Date();
+  set.add(monthKey(ymd(now)));
+  const m=monday(addDays(now,S.week*7)); set.add(monthKey(ymd(m))); set.add(monthKey(ymd(addDays(m,5))));
+  return [...set];
+}
+async function loadAll(){
+  setSync("busy","Loading");
+  try{
+    const ms=monthsNeeded();
+    const res=await Promise.all(ms.map(readMonth));
+    ms.forEach((mk,i)=>S.remote[mk]=res[i].data);
+    S.loaded=true; rebuild(); render();
+    if(S.pending.length&&S.token) flush(); else setSync("ok",S.token?"Saved":"View only");
+  }catch(e){setSync("err","Offline");rebuild();render()}
+}
+let flushing=false,flushTimer=null;
+function queue(op){S.pending.push(op);store.set("hd-pending",JSON.stringify(S.pending));rebuild();render();clearTimeout(flushTimer);flushTimer=setTimeout(flush,1200)}
+async function flush(){
+  if(flushing||!S.token||!S.pending.length) return;
+  flushing=true; setSync("busy","Saving");
+  try{
+    const byMonth={}; for(const op of S.pending)(byMonth[monthKey(op.ts)]=byMonth[monthKey(op.ts)]||[]).push(op);
+    for(const [mk,ops] of Object.entries(byMonth)){
+      for(let attempt=0;attempt<3;attempt++){
+        const {data,sha}=await readMonth(mk); data.checks=data.checks||{}; data.notes=data.notes||[];
+        for(const op of ops){
+          if(op.op==="add"){const a=data.checks[op.id]=data.checks[op.id]||[]; if(!a.includes(op.ts)) a.push(op.ts)}
+          else if(op.op==="del"&&data.checks[op.id]){data.checks[op.id]=data.checks[op.id].filter(s=>s!==op.ts); if(!data.checks[op.id].length) delete data.checks[op.id]}
+          else if(op.op==="note") data.notes.push({at:op.ts,text:op.text});
+        }
+        const body={message:`Ticks ${ymd(new Date())}`,content:b64enc(JSON.stringify(data)),branch:BRANCH};
+        if(sha) body.sha=sha;
+        const r=await fetch(`https://api.github.com/repos/${REPO}/contents/log/${mk}.json`,{method:"PUT",headers:{...headers(),"Content-Type":"application/json"},body:JSON.stringify(body)});
+        if(r.ok){S.remote[mk]=data; S.pending=S.pending.filter(o=>!ops.includes(o)); store.set("hd-pending",JSON.stringify(S.pending)); break}
+        if(r.status===401||r.status===403){throw new Error("key")}
+        if(r.status!==409&&r.status!==422) throw new Error("write "+r.status);
+      }
+    }
+    rebuild(); render(); setSync(S.pending.length?"err":"ok",S.pending.length?"Not saved":"Saved");
+  }catch(e){setSync("err",e.message==="key"?"Key problem":"Not saved, will retry")}
+  finally{flushing=false}
+}
+function setSync(state,text){S.sync=state;$("#syncDot").className="dot "+(state==="ok"?"ok":state==="busy"?"busy":state==="err"?"err":"");$("#syncText").textContent=text}
+setInterval(()=>{if(S.pending.length) flush()},30000);
+window.addEventListener("online",()=>flush());
+
+/* ---------- ticking ---------- */
+function toggle(id){
+  const t=S.byId[id]; const now=new Date(); const sl=slotFor(t,now); if(!sl) return;
+  const done=doneIn(id,sl.from,sl.to);
+  const todays=done.filter(s=>s.slice(0,10)===ymd(now));
+  if(done.length&&!todays.length) return; // done on an earlier day of this slot
+  if(todays.length) queue({op:"del",id,ts:todays[todays.length-1]});
+  else queue({op:"add",id,ts:stamp(now)});
+}
+
+/* ---------- rendering ---------- */
+const svgCheck='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>';
+const svgChev='<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+function thumbs(t){const all=[...t.products,...t.toolImgs].slice(0,4);return all.length?`<span class="thumbs">${all.map(p=>`<img src="img/${p}.jpg" alt="${esc(PIC[p]||p)}" loading="lazy">`).join("")}</span>`:""}
+function details(t){
+  const parts=[];
+  if(t.tools) parts.push(`<p class="how">${esc(t.tools)}</p>`);
+  if(t.detail) parts.push(`<p>${esc(t.detail)}</p>`);
+  (t.notes||"").split("\n").forEach(l=>{if(l.trim())parts.push(`<p>${esc(l.trim().replace(/^\*\s*/,"• "))}</p>`)});
+  const pics=(title,list)=>list.length?`<h4>${title}</h4>`+list.map(p=>`<div class="pic"><img src="img/${p}.jpg" alt="" loading="lazy"><span>${esc(PIC[p]||p)}</span></div>`).join(""):"";
+  const p=pics("Products",t.products)+pics("Tools",t.toolImgs);
+  return `<div class="more">${parts.length?`<div class="notes">${parts.join("")}</div>`:""}${p?`<div class="pics">${p}</div>`:""}${t.minutes?`<div class="meta"><span class="chip plain">About ${t.minutes} min</span><span class="chip plain">${freqText(t)}${slotText(t)?": "+slotText(t):""}</span></div>`:""}</div>`;
+}
+function taskRow(t,now,canTick){
+  const sl=slotFor(t,now); const done=doneIn(t.id,sl.from,sl.to);
+  const todayDone=done.find(s=>s.slice(0,10)===ymd(now)); const earlier=done.length&&!todayDone;
+  const cls=["task",t.seal?"seal":"",done.length?"done":"",earlier?"earlier":""].join(" ");
+  let chip;
+  if(todayDone) chip=`<span class="chip ok">Done ${todayDone.slice(11)}</span>`;
+  else if(earlier) chip=`<span class="chip ok">Done ${t.monthly?done[0].slice(8,10)+"/"+done[0].slice(5,7):fmtDay(done[0])}</span>`;
+  else if(sl.last) chip=`<span class="chip last">Last day today</span>`;
+  else chip=`<span class="chip">${sl.label}</span>`;
+  const open=S.open["t:"+t.id]?"true":"false";
+  return `<div class="${cls}" data-open="${open}">
+    <button class="check" data-tick="${t.id}" ${(!canTick||earlier)?"disabled":""} aria-label="${done.length?"Done":"Mark done"}: ${esc(t.name)}">${svgCheck}</button>
+    <div class="tbody">
+      <button class="tname" data-toggle="t:${t.id}" aria-expanded="${open}">${esc(t.name)}</button>
+      <div class="meta">${chip}${thumbs(t)}</div>
+      ${details(t)}
+    </div></div>`;
+}
+function renderToday(){
+  const now=new Date(); const i=dayIdx(now);
+  if(i>5) return `<div class="card dayoff"><h2>Sunday is your day off</h2><p>Enjoy your day. The checklist starts again on Monday.</p></div>`+notesBox(false);
+  const canTick=!!S.token;
+  let total=0,done=0,minLeft=0,html="";
+  for(const r of S.rooms){
+    const ts=r.tasks.filter(t=>{const sl=slotFor(t,now);const d=doneIn(t.id,sl.from,sl.to).length>0;
+      if(S.filter==="todo") return !d || doneIn(t.id,sl.from,sl.to).some(s=>s.slice(0,10)===ymd(now));
+      return true});
+    const all=r.tasks.map(t=>{const sl=slotFor(t,now);return {t,d:doneIn(t.id,sl.from,sl.to)}});
+    const due=all.filter(x=>!x.d.length||x.d.some(s=>s.slice(0,10)===ymd(now)));
+    const dn=due.filter(x=>x.d.length).length;
+    total+=due.length; done+=dn; minLeft+=due.filter(x=>!x.d.length).reduce((a,x)=>a+(x.t.minutes||0),0);
+    if(!ts.length) continue;
+    const openKey="r:"+r.room; const open=S.open[openKey]===false?"false":"true";
+    html+=`<section class="card room" data-open="${open}">
+      <button class="roomhead" data-toggle="${esc(openKey)}" data-room="1" aria-expanded="${open}"><h2>${esc(r.room)}</h2><span class="count ${dn===due.length?"all":""}">${dn} of ${due.length}</span>${svgChev}</button>
+      <div class="tasks">${ts.map(t=>taskRow(t,now,canTick)).join("")}</div></section>`;
+  }
+  const pct=total?Math.round(done/total*100):0;
+  const head=`<section class="card hero">
+    <div class="date">${DAYS[i]} ${now.getDate()} ${now.toLocaleString("en-GB",{month:"long"})}</div>
+    <div class="progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div>
+    <div class="row"><span><b>${done} of ${total}</b> done today</span><span>About ${(minLeft/60).toFixed(1)} h of work left</span></div>
+  </section>
+  ${canTick?"":`<div class="banner info"><span>View only on this phone. To tick duties, add the GitHub key in Settings.</span></div>`}
+  <div class="filters"><button class="pill" data-filter="todo" aria-pressed="${S.filter==="todo"}">To do today</button><button class="pill" data-filter="all" aria-pressed="${S.filter==="all"}">Show done earlier too</button></div>`;
+  return head+(html||`<p class="empty">Everything is done for today. Thank you!</p>`)+notesBox(canTick);
+}
+function notesBox(canTick){
+  const today=ymd(new Date()); const list=S.notes.filter(n=>n.at.slice(0,10)===today);
+  return `<section class="card note-box">
+    <h2>Tell madam or sir</h2>
+    ${canTick?`<label for="noteInput" style="font-size:14px;color:var(--muted)">Something running low, missing or broken? Write it here.</label>
+    <textarea id="noteInput" placeholder="Example: Clorox bleach almost empty"></textarea>
+    <div class="rowr"><button class="btn" id="sendNote">Send</button></div>`:""}
+    ${list.length?`<div class="note-list">${list.map(n=>`<div><time>${n.at.slice(11)}</time>${esc(n.text)}</div>`).join("")}</div>`:(canTick?"":`<p class="empty" style="padding:4px">No messages today.</p>`)}
+  </section>`;
+}
+function renderWeek(){
+  const now=new Date(); const m=monday(addDays(now,S.week*7)); const todayStr=ymd(now);
+  let due=0,done=0,miss=0,minDone=0,minPlan=0,html="";
+  for(const r of S.rooms){
+    let rows="";
+    for(const t of r.tasks.filter(x=>!x.monthly)){
+      rows+=`<div class="tn">${esc(t.seal?"Seal of quality":t.name)}</div>`;
+      for(const [a,b] of slots(t)){
+        const from=addDays(m,a),to=addDays(m,b); const d=doneIn(t.id,from,to);
+        let cls="",txt="";
+        minPlan+=t.minutes||0;
+        if(d.length){cls="done";txt=b>a?fmtDay(d[0]):d[0].slice(11,13)+"h";done++;due++;minDone+=t.minutes||0}
+        else if(ymd(to)<todayStr){cls="miss";txt="✕";miss++;due++}
+        else if(ymd(from)<=todayStr){cls="open";txt="…"}
+        rows+=`<div class="cell ${cls}" style="grid-column:span ${b-a+1}" title="${esc(t.name)}">${txt}</div>`;
+      }
+    }
+    html+=`<section class="card grid"><h3>${esc(r.room)}</h3><div class="g">
+      <div></div>${SHORT.map((s,k)=>`<div class="hd ${ymd(addDays(m,k))===todayStr?"today":""}">${s}</div>`).join("")}
+      ${rows}</div></section>`;
+  }
+  const monthly=S.all.filter(t=>t.monthly).map(t=>{const sl=slotFor(t,m);const d=doneIn(t.id,sl.from,sl.to);
+    return `<div><span>${esc(t.room)}: ${esc(t.name)}</span><b style="color:${d.length?"var(--done)":"var(--muted)"}">${d.length?"Done "+d[0].slice(8,10)+"/"+d[0].slice(5,7):"Not yet"}</b></div>`}).join("");
+  const sat=addDays(m,5);
+  const weekNotes=S.notes.filter(n=>n.at.slice(0,10)>=ymd(m)&&n.at.slice(0,10)<=ymd(sat));
+  const pct=due?Math.round(done/due*100):100;
+  return `<div class="weekbar"><button class="iconbtn" data-week="-1" aria-label="Previous week">‹</button><h2>${m.getDate()} ${m.toLocaleString("en-GB",{month:"short"})} to ${sat.getDate()} ${sat.toLocaleString("en-GB",{month:"short"})}</h2><button class="iconbtn" data-week="1" aria-label="Next week" ${S.week>=0?"disabled":""}>›</button></div>
+  <div class="stats">
+    <div class="card stat"><b>${pct}%</b><span>done on time so far</span></div>
+    <div class="card stat"><b style="color:${miss?"var(--miss)":"inherit"}">${miss}</b><span>missed</span></div>
+    <div class="card stat"><b>${(minDone/60).toFixed(1)} h</b><span>of ${(minPlan/60).toFixed(1)} h planned</span></div>
+  </div>
+  <div class="legend"><span><i style="background:var(--done-soft)"></i>Done (day or hour)</span><span><i style="background:var(--miss-soft)"></i>Missed</span><span><i style="background:var(--accent-soft)"></i>Still open</span></div>
+  ${weekNotes.length?`<section class="card note-box"><h2>Messages from the helper</h2><div class="note-list">${weekNotes.map(n=>`<div><time>${fmtDay(n.at)} ${n.at.slice(11)}</time>${esc(n.text)}</div>`).join("")}</div></section>`:""}
+  ${html}
+  <section class="card monthly"><h3 style="font-family:var(--f-display)">Monthly duties, ${m.toLocaleString("en-GB",{month:"long"})}</h3>${monthly}</section>`;
+}
+function renderDuties(){
+  const q=S.dq.trim().toLowerCase();
+  const wk=t=>(t.minutes&&t.perWeek&&!t.monthly)?t.minutes*t.perWeek:0;
+  const total=S.all.reduce((a,t)=>a+wk(t),0);
+  const rm=S.rooms.map(r=>({r:r.room,m:r.tasks.reduce((a,t)=>a+wk(t),0)})).sort((a,b)=>b.m-a.m); const mx=rm[0].m;
+  const match=t=>!q||[t.name,t.notes,t.tools,t.room,...t.products.map(p=>PIC[p]),...t.toolImgs.map(p=>PIC[p])].join(" ").toLowerCase().includes(q);
+  let list="";
+  const card=t=>`<div class="task ${t.seal?"seal":""}" data-open="${S.open["d:"+t.id]?"true":"false"}" style="grid-template-columns:1fr;padding-left:14px">
+     <div class="tbody"><button class="tname" data-toggle="d:${t.id}">${esc(t.name)}</button>
+     <div class="meta"><span class="chip">${freqText(t)}</span>${slotText(t)?`<span class="chip plain">${slotText(t)}</span>`:""}${thumbs(t)}</div>${details(t)}</div></div>`;
+  if(S.dview==="rooms"){
+    for(const r of S.rooms){const ts=r.tasks.filter(match);if(!ts.length)continue;
+      list+=`<section class="card room"><div class="roomhead" style="cursor:default"><h2>${esc(r.room)}</h2><span class="count">${ts.filter(t=>!t.seal).length} duties</span></div><div class="tasks">${ts.map(card).join("")}</div></section>`}
+  }else{
+    const groups=[["Every day",t=>!t.monthly&&!t.seal&&t.windows.length===6],["3 times a week",t=>!t.monthly&&t.windows.length===3],["2 times a week",t=>!t.monthly&&t.windows.length===2],["Once a week",t=>!t.monthly&&t.windows.length===1],["Once a month",t=>t.monthly],["Seal of quality, every day",t=>t.seal]];
+    for(const [g,f] of groups){const ts=S.all.filter(t=>f(t)&&match(t));if(!ts.length)continue;
+      list+=`<section class="card room"><div class="roomhead" style="cursor:default"><h2>${g}</h2><span class="count">${ts.length}</span></div><div class="tasks">${ts.map(t=>card({...t,name:t.seal?t.room:`${t.name}`})).join("")}</div></section>`}
+  }
+  return `<section class="card rules"><h3>Always</h3><ul>
+    <li>If any cleaning tool or product is nearly empty, please tell madam or sir.</li>
+    <li>If you need cleaning gloves, please tell madam or sir.</li>
+    <li>If anything is missing to do your duties, please tell madam or sir.</li></ul></section>
+  <div class="stats">
+    <div class="card stat"><b>${(total/60).toFixed(1)} h</b><span>per week</span></div>
+    <div class="card stat"><b>${(total/60/6).toFixed(1)} h</b><span>per day, Mon to Sat</span></div>
+    <div class="card stat"><b>${S.all.filter(t=>!t.seal).length}</b><span>duties</span></div>
+  </div>
+  <section class="card bars"><h3>Hours per week by area</h3>${rm.map(x=>`<div class="bar"><span>${esc(x.r)}</span><span class="track"><span class="fill" style="width:${(x.m/mx*100).toFixed(1)}%"></span></span><span class="n">${(x.m/60).toFixed(1)} h · ${Math.round(x.m/total*100)}%</span></div>`).join("")}</section>
+  <div class="filters"><button class="pill" data-dview="rooms" aria-pressed="${S.dview==="rooms"}">By room</button><button class="pill" data-dview="freq" aria-pressed="${S.dview==="freq"}">By frequency</button></div>
+  <input class="search" id="dsearch" type="search" placeholder="Search, e.g. floor, bleach, windows" aria-label="Search duties" value="${esc(S.dq)}">
+  <div id="dlist" style="display:grid;gap:14px">${list||`<p class="empty">No duty matches that search.</p>`}</div>`;
+}
+function render(){
+  if(!S.rooms.length) return;
+  $("#title").textContent={today:"Today",week:"Week report",duties:"All duties"}[S.tab];
+  document.querySelectorAll(".nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===S.tab?"page":"false"));
+  const keepNote=$("#noteInput")?.value||"";
+  const html=S.tab==="today"?renderToday():S.tab==="week"?renderWeek():renderDuties();
+  if(S.tab==="duties"&&$("#dlist")&&document.activeElement?.id==="dsearch"){ // keep focus while typing
+    const tmp=document.createElement("div");tmp.innerHTML=html;$("#dlist").replaceWith(tmp.querySelector("#dlist"));return}
+  $("#view").innerHTML=html;
+  if($("#noteInput")) $("#noteInput").value=keepNote;
+}
+
+/* ---------- events ---------- */
+function route(){const t=location.hash.slice(1);S.tab=["today","week","duties"].includes(t)?t:"today";render();window.scrollTo(0,0)}
+window.addEventListener("hashchange",route);
+document.querySelector(".nav").addEventListener("click",e=>{const b=e.target.closest("[data-tab]");if(b){location.hash=b.dataset.tab}});
+$("#view").addEventListener("click",e=>{
+  const tk=e.target.closest("[data-tick]"); if(tk){toggle(tk.dataset.tick);return}
+  const tg=e.target.closest("[data-toggle]"); if(tg){const k=tg.dataset.toggle;
+    if(tg.dataset.room) S.open[k]=S.open[k]===false?true:false; else S.open[k]=!S.open[k];
+    store.set("hd-open",JSON.stringify(S.open)); render(); return}
+  const f=e.target.closest("[data-filter]"); if(f){S.filter=f.dataset.filter;render();return}
+  const dv=e.target.closest("[data-dview]"); if(dv){S.dview=dv.dataset.dview;render();return}
+  const w=e.target.closest("[data-week]"); if(w){S.week=Math.min(0,S.week+Number(w.dataset.week));loadAll();return}
+  if(e.target.id==="sendNote"){const v=$("#noteInput").value.trim(); if(!v) return; $("#noteInput").value=""; queue({op:"note",ts:stamp(new Date()),text:v.slice(0,500)})}
+});
+$("#view").addEventListener("input",e=>{if(e.target.id==="dsearch"){S.dq=e.target.value;render()}});
+$("#refreshBtn").addEventListener("click",()=>{checkVersion();loadAll()});
+$("#settingsBtn").addEventListener("click",()=>{$("#sheet").dataset.open="true";$("#tokenInput").value="";$("#tokenMsg").textContent=S.token?"A key is saved on this phone.":"No key on this phone: view only.";$("#tokenMsg").className="msg"});
+$("#closeSheet").addEventListener("click",()=>$("#sheet").dataset.open="false");
+$("#sheet").addEventListener("click",e=>{if(e.target.id==="sheet")$("#sheet").dataset.open="false"});
+$("#saveToken").addEventListener("click",async()=>{
+  const v=$("#tokenInput").value.trim(); const msg=$("#tokenMsg"); if(!v){msg.textContent="Paste the key first.";msg.className="msg err";return}
+  msg.textContent="Checking the key…";msg.className="msg";
+  try{const r=await fetch(`https://api.github.com/repos/${REPO}`,{headers:{"Accept":"application/vnd.github+json",Authorization:"Bearer "+v}});
+    const j=await r.json(); if(!r.ok||!j.permissions?.push){msg.textContent="This key can't save to the duties app. Check it was made for helper-duties with Contents: Read and write.";msg.className="msg err";return}
+    S.token=v; store.set("hd-token",v); msg.textContent="Key saved. Ticks from this phone are now saved.";msg.className="msg ok"; render(); flush();
+  }catch(e){msg.textContent="Couldn't reach GitHub. Check the internet connection and try again.";msg.className="msg err"}
+});
+$("#removeToken").addEventListener("click",()=>{S.token=null;store.del("hd-token");$("#tokenMsg").textContent="Key removed. This phone is view only.";$("#tokenMsg").className="msg";render();setSync("ok","View only")});
+
+/* ---------- updates ---------- */
+async function checkVersion(){
+  try{const r=await fetch("version.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const j=await r.json();
+    if(j.v&&j.v!==APP_VERSION) location.replace(location.pathname+"?v="+encodeURIComponent(j.v)+location.hash)}catch(e){}
+}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){checkVersion();loadAll()}});
+setInterval(()=>{if(document.visibilityState==="visible"&&!S.pending.length)loadAll()},180000);
+
+/* ---------- start ---------- */
+(async function start(){
+  $("#aboutLine").textContent="App version "+APP_VERSION;
+  try{
+    const r=await fetch("duties.json?v="+APP_VERSION); S.rooms=await r.json();
+  }catch(e){$("#view").innerHTML=`<p class="empty">Couldn't load the duty list. Check the internet connection and tap refresh.</p>`;return}
+  S.rooms.forEach(r=>r.tasks.forEach(t=>t.room=r.room)); S.all=S.rooms.flatMap(r=>r.tasks); S.byId=Object.fromEntries(S.all.map(t=>[t.id,t]));
+  rebuild(); route(); checkVersion(); loadAll();
+})();
+</script>
+</body>
+</html>
