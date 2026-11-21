@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.5.0",
+    "date": "2026-11-21",
+    "notes": [
+      "New Week tab: the whole current week, with planned and done hours for each day and every duty of the chosen day.",
+      "The room by room grid moves to its own Report tab.",
+      "Updated times for the All rooms duties, including ranges such as 5 to 10 min."
+    ]
+  },
+  {
     "version": "1.4.0",
     "date": "2026-11-21",
     "notes": [

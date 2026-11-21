@@ -1,10 +1,10 @@
 {
-  "v": "202611210405",
-  "version": "1.4.0",
+  "v": "202611210442",
+  "version": "1.5.0",
   "date": "2026-11-21",
   "notes": [
-    "New All rooms section for the duties every room shares: bins, hoovering, wiping and bleaching floors, balcony floors, door handles and windows. One tick covers every room.",
-    "Each shared duty lists its rooms with the minutes for each.",
-    "Rooms now show only their own duties."
+    "New Week tab: the whole current week, with planned and done hours for each day and every duty of the chosen day.",
+    "The room by room grid moves to its own Report tab.",
+    "Updated times for the All rooms duties, including ranges such as 5 to 10 min."
   ]
 }

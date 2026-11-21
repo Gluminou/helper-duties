@@ -156,6 +156,29 @@ main{max-width:720px;margin:0 auto;padding:4px 16px 8px;display:flex;flex-direct
 .monthly div{display:flex;justify-content:space-between;gap:10px}
 .monthly b{white-space:nowrap}
 
+/* This week */
+.days{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.daycard{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px;display:grid;gap:2px;text-align:left;cursor:pointer;font-variant-numeric:tabular-nums}
+.daycard .dn{font-size:13px;font-weight:700;color:var(--muted)}
+.daycard b{font-family:var(--f-display);font-size:20px}
+.daycard .dl{font-size:12.5px;color:var(--muted)}
+.daycard .bar{height:6px;border-radius:3px;background:var(--accent-soft);overflow:hidden;margin-top:4px;display:block}
+.daycard .bar i{display:block;height:100%;background:var(--done)}
+.daycard.today .dn{color:var(--accent)}
+.daycard.sel{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.hint{margin:0;font-size:12.5px;color:var(--muted)}
+.dayh{font-size:20px;margin-top:4px}
+.plan{padding:6px 14px 8px}
+.plan h3{font-family:var(--f-display);font-size:16px;padding:6px 0 4px}
+.pl{display:grid;grid-template-columns:1fr auto auto;gap:4px 8px;align-items:center;padding:7px 0;border-top:1px solid var(--line);font-size:14.5px}
+.pl .pn{line-height:1.3}
+.pl .pn em{display:block;font-style:normal;font-size:12.5px;color:var(--muted)}
+.pl .pm{font-size:12.5px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.pl.ok .pn{color:var(--muted)}
+.chip.miss{background:var(--miss-soft);color:var(--miss)}
+.chip.open{background:var(--accent-soft);color:var(--accent)}
+.chip.plan{background:none;border:1px solid var(--line);color:var(--muted);font-weight:400}
+
 /* All duties */
 .rules{padding:12px 14px;border-left:4px solid var(--accent)}
 .rules ul{margin:6px 0 0;padding-left:20px;display:grid;gap:3px;font-size:14.5px}
@@ -199,6 +222,7 @@ main{max-width:720px;margin:0 auto;padding:4px 16px 8px;display:flex;flex-direct
 <nav class="nav" aria-label="Sections">
   <button data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="m8 12 3 3 5-6"/></svg>Today</button>
   <button data-tab="week"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2"/></svg>Week</button>
+  <button data-tab="report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Report</button>
   <button data-tab="duties"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg>All duties</button>
 </nav>
 
@@ -222,9 +246,9 @@ main{max-width:720px;margin:0 auto;padding:4px 16px 8px;display:flex;flex-direct
 /* ---------- config ---------- */
 // Versioning: tools/release.mjs writes these three lines, version.json and changelog.json together.
 // APP_VERSION is the build stamp the app compares with version.json to know an update is out.
-const APP_RELEASE="1.4.0";
+const APP_RELEASE="1.5.0";
 const APP_DATE="2026-11-21";
-const APP_VERSION="202611210405";
+const APP_VERSION="202611210442";
 const REPO="Gluminou/helper-duties", BRANCH="log";
 const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const SHORT=["Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -367,7 +391,9 @@ function toggle(id){
 /* ---------- rendering ---------- */
 const svgCheck='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>';
 const svgChev='<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
-const mins=t=>t.minutes?`<span class="chip time" aria-label="About ${t.minutes} minutes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${t.minutes} min</span>`:"";
+const eff=t=>t.minutes?(t.minutes+(t.minutesMax||t.minutes))/2:0;
+const minText=t=>t.minutesMax?`${t.minutes} to ${t.minutesMax} min`:`${t.minutes} min`;
+const mins=t=>t.minutes?`<span class="chip time" aria-label="About ${minText(t)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${minText(t)}</span>`:"";
 const roomsChip=t=>t.parts?`<span class="chip plain">${t.parts.length} rooms</span>`:"";
 function thumbs(t){const all=[...t.products,...t.toolImgs].slice(0,4);return all.length?`<span class="thumbs">${all.map(p=>`<img src="img/${p}.jpg" alt="${esc(PIC[p]||p)}" loading="lazy">`).join("")}</span>`:""}
 function details(t){
@@ -377,7 +403,7 @@ function details(t){
   (t.notes||"").split("\n").forEach(l=>{if(l.trim())parts.push(`<p>${esc(l.trim().replace(/^\*\s*/,"• "))}</p>`)});
   const pics=(title,list)=>list.length?`<h4>${title}</h4>`+list.map(p=>`<div class="pic"><img src="img/${p}.jpg" alt="" loading="lazy"><span>${esc(PIC[p]||p)}</span></div>`).join(""):"";
   const p=pics("Products",t.products)+pics("Tools",t.toolImgs);
-  const rooms=t.parts?`<div class="parts"><h4>Rooms</h4>${t.parts.map(x=>`<div><span>${esc(x.room)}${x.note?` <em>· ${esc(x.note)}</em>`:""}</span><span>${x.minutes} min</span></div>`).join("")}</div>`:"";
+  const rooms=t.parts?`<div class="parts"><h4>Rooms</h4>${t.parts.map(x=>`<div><span>${esc(x.room)}${x.note?` <em>· ${esc(x.note)}</em>`:""}</span></div>`).join("")}</div>`:"";
   return `<div class="more">${parts.length?`<div class="notes">${parts.join("")}</div>`:""}${rooms}${p?`<div class="pics">${p}</div>`:""}${t.seal?"":`<div class="meta"><span class="chip plain">${freqText(t)}${slotText(t)?": "+slotText(t):""}</span></div>`}</div>`;
 }
 function taskRow(t,now,canTick){
@@ -410,7 +436,7 @@ function renderToday(){
     const all=r.tasks.map(t=>{const sl=slotFor(t,now);return {t,d:doneIn(t.id,sl.from,sl.to)}});
     const due=all.filter(x=>!x.d.length||x.d.some(s=>s.slice(0,10)===ymd(now)));
     const dn=due.filter(x=>x.d.length).length;
-    total+=due.length; done+=dn; minLeft+=due.filter(x=>!x.d.length).reduce((a,x)=>a+(x.t.minutes||0),0);
+    total+=due.length; done+=dn; minLeft+=due.filter(x=>!x.d.length).reduce((a,x)=>a+eff(x.t),0);
     if(!ts.length) continue;
     const openKey="r:"+r.room; const open=S.open[openKey]===false?"false":"true";
     html+=`<section class="card room" data-open="${open}">
@@ -438,6 +464,51 @@ function notesBox(canTick){
   </section>`;
 }
 function renderWeek(){
+  // The current week at a glance: planned and done hours per day, then the chosen day's duties.
+  const now=new Date(), m=monday(now), today=ymd(now), ti=dayIdx(now);
+  if(S.day==null) S.day=ti>5?0:ti;
+  const tasks=S.all.filter(t=>!t.monthly);
+  const plan=Array(6).fill(0), doneH=Array(6).fill(0);
+  for(const t of tasks){
+    for(const [a,b] of slots(t)){for(let k=a;k<=b;k++) plan[k]+=eff(t)/(b-a+1);}
+    for(const s of S.checks[t.id]||[]){const k=Math.round((new Date(s.slice(0,10)+"T00:00")-m)/864e5);if(k>=0&&k<6)doneH[k]+=eff(t)}
+  }
+  const weekPlan=plan.reduce((a,x)=>a+x,0), weekDone=doneH.reduce((a,x)=>a+x,0);
+  const h=x=>(x/60).toFixed(1)+" h";
+  const days=SHORT.map((s,k)=>{const d=addDays(m,k),ds=ymd(d),past=ds<today,isT=ds===today;
+    return `<button class="daycard ${isT?"today":""} ${S.day===k?"sel":""}" data-day="${k}" aria-pressed="${S.day===k}">
+      <span class="dn">${s} ${d.getDate()}</span><b>${h(plan[k])}</b>
+      <span class="dl">${past||isT?`${h(doneH[k])} done`:"planned"}</span>
+      <span class="bar"><i style="width:${Math.min(100,doneH[k]/plan[k]*100||0).toFixed(0)}%"></i></span></button>`}).join("");
+  const k=S.day, dayDate=addDays(m,k), dstr=ymd(dayDate);
+  const status=(t,a,b)=>{const from=addDays(m,a),to=addDays(m,b),d=doneIn(t.id,from,to);
+    if(d.length) return {c:"ok",txt:"Done "+(b>a?fmtDay(d[0])+" ":"")+d[0].slice(11)};
+    if(ymd(to)<today) return {c:"miss",txt:"Missed"};
+    if(ymd(from)<=today) return {c:"open",txt:ymd(to)===today&&b>a?"Last day today":"To do"};
+    return {c:"plan",txt:"Planned"}};
+  const line=(t,a,b,label)=>{const st=status(t,a,b);
+    return `<div class="pl ${st.c}"><span class="pn">${esc(t.seal?"Seal of quality":t.name)}${label?`<em>${label}</em>`:""}</span><span class="pm">${t.minutes?minText(t):""}</span><span class="chip ${st.c}">${st.txt}</span></div>`};
+  let rooms="";
+  for(const r of S.rooms){
+    const items=r.tasks.filter(t=>!t.monthly&&t.windows.length>1).map(t=>{const [a,b]=slots(t).find(([a,b])=>k>=a&&k<=b);return line(t,a,b,b>a?(b-a>1?`${SHORT[a]} to ${SHORT[b]}`:`${SHORT[a]} or ${SHORT[b]}`):"")});
+    if(items.length) rooms+=`<section class="card plan"><h3>${esc(r.room)}</h3>${items.join("")}</section>`;
+  }
+  const weekly=S.all.filter(t=>!t.monthly&&t.windows.length===1).map(t=>line(t,0,5,`${esc(t.room)}`)).join("");
+  const monthly=S.all.filter(t=>t.monthly).map(t=>{const sl=slotFor(t,m);const d=doneIn(t.id,sl.from,sl.to);
+    return `<div class="pl ${d.length?"ok":"plan"}"><span class="pn">${esc(t.name)}<em>${esc(t.room)}</em></span><span class="pm"></span><span class="chip ${d.length?"ok":"plan"}">${d.length?"Done "+d[0].slice(8,10)+"/"+d[0].slice(5,7):"Not yet"}</span></div>`}).join("");
+  return `<div class="stats">
+    <div class="card stat"><b>${h(weekPlan)}</b><span>planned this week</span></div>
+    <div class="card stat"><b>${h(weekDone)}</b><span>done so far</span></div>
+    <div class="card stat"><b>${weekPlan?Math.round(weekDone/weekPlan*100):0}%</b><span>of the week</span></div>
+  </div>
+  <div class="days">${days}</div>
+  <p class="hint">Hours per day include a share of the duties that can be done on several days.</p>
+  <h2 class="dayh">${DAYS[k]} ${dayDate.getDate()} ${dayDate.toLocaleString("en-GB",{month:"long"})}${dstr===today?" · today":""}</h2>
+  ${rooms}
+  <section class="card plan"><h3>Once this week, any day</h3>${weekly}</section>
+  <section class="card plan"><h3>Once a month, ${m.toLocaleString("en-GB",{month:"long"})}</h3>${monthly}</section>`;
+}
+function renderReport(){
   const now=new Date(); const m=monday(addDays(now,S.week*7)); const todayStr=ymd(now);
   let due=0,done=0,miss=0,minDone=0,minPlan=0,html="";
   for(const r of S.rooms){
@@ -447,8 +518,8 @@ function renderWeek(){
       for(const [a,b] of slots(t)){
         const from=addDays(m,a),to=addDays(m,b); const d=doneIn(t.id,from,to);
         let cls="",txt="";
-        minPlan+=t.minutes||0;
-        if(d.length){cls="done";txt=b>a?fmtDay(d[0]):d[0].slice(11,13)+"h";done++;due++;minDone+=t.minutes||0}
+        minPlan+=eff(t);
+        if(d.length){cls="done";txt=b>a?fmtDay(d[0]):d[0].slice(11,13)+"h";done++;due++;minDone+=eff(t)}
         else if(ymd(to)<todayStr){cls="miss";txt="✕";miss++;due++}
         else if(ymd(from)<=todayStr){cls="open";txt="…"}
         rows+=`<div class="cell ${cls}" style="grid-column:span ${b-a+1}" title="${esc(t.name)}">${txt}</div>`;
@@ -476,7 +547,7 @@ function renderWeek(){
 }
 function renderDuties(){
   const q=S.dq.trim().toLowerCase();
-  const wk=t=>(t.minutes&&t.perWeek&&!t.monthly)?t.minutes*t.perWeek:0;
+  const wk=t=>(t.minutes&&t.perWeek&&!t.monthly)?eff(t)*t.perWeek:0;
   const total=S.all.reduce((a,t)=>a+wk(t),0);
   const rm=S.rooms.map(r=>({r:r.room,m:r.tasks.reduce((a,t)=>a+wk(t),0)})).sort((a,b)=>b.m-a.m); const mx=rm[0].m;
   const match=t=>!q||[t.name,t.notes,t.tools,t.room,...(t.parts||[]).map(x=>x.room+" "+x.note),...t.products.map(p=>PIC[p]),...t.toolImgs.map(p=>PIC[p])].join(" ").toLowerCase().includes(q);
@@ -508,10 +579,10 @@ function renderDuties(){
 }
 function render(){
   if(!S.rooms.length) return;
-  $("#title").textContent={today:"Today",week:"Week report",duties:"All duties"}[S.tab];
+  $("#title").textContent={today:"Today",week:"This week",report:"Week report",duties:"All duties"}[S.tab];
   document.querySelectorAll(".nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===S.tab?"page":"false"));
   const keepNote=$("#noteInput")?.value||"";
-  const html=S.tab==="today"?renderToday():S.tab==="week"?renderWeek():renderDuties();
+  const html=S.tab==="today"?renderToday():S.tab==="week"?renderWeek():S.tab==="report"?renderReport():renderDuties();
   if(S.tab==="duties"&&$("#dlist")&&document.activeElement?.id==="dsearch"){ // keep focus while typing
     const tmp=document.createElement("div");tmp.innerHTML=html;$("#dlist").replaceWith(tmp.querySelector("#dlist"));return}
   $("#view").innerHTML=html;
@@ -519,7 +590,7 @@ function render(){
 }
 
 /* ---------- events ---------- */
-function route(){const t=location.hash.slice(1);S.tab=["today","week","duties"].includes(t)?t:"today";render();window.scrollTo(0,0)}
+function route(){const t=location.hash.slice(1);if(t==="week"&&S.week!==0){S.week=0;loadAll()}S.tab=["today","week","report","duties"].includes(t)?t:"today";render();window.scrollTo(0,0)}
 window.addEventListener("hashchange",route);
 document.querySelector(".nav").addEventListener("click",e=>{const b=e.target.closest("[data-tab]");if(b){location.hash=b.dataset.tab}});
 $("#view").addEventListener("click",e=>{
@@ -529,6 +600,7 @@ $("#view").addEventListener("click",e=>{
     store.set("hd-open",JSON.stringify(S.open)); render(); return}
   const f=e.target.closest("[data-filter]"); if(f){S.filter=f.dataset.filter;render();return}
   const dv=e.target.closest("[data-dview]"); if(dv){S.dview=dv.dataset.dview;render();return}
+  const dd=e.target.closest("[data-day]"); if(dd){S.day=Number(dd.dataset.day);render();return}
   const w=e.target.closest("[data-week]"); if(w){S.week=Math.min(0,S.week+Number(w.dataset.week));loadAll();return}
   if(e.target.id==="sendNote"){const v=$("#noteInput").value.trim(); if(!v) return; $("#noteInput").value=""; queue({op:"note",ts:stamp(new Date()),text:v.slice(0,500)})}
 });
