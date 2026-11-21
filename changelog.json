@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.4.0",
+    "date": "2026-11-21",
+    "notes": [
+      "New All rooms section for the duties every room shares: bins, hoovering, wiping and bleaching floors, balcony floors, door handles and windows. One tick covers every room.",
+      "Each shared duty lists its rooms with the minutes for each.",
+      "Rooms now show only their own duties."
+    ]
+  },
+  {
     "version": "1.3.0",
     "date": "2026-11-21",
     "notes": [

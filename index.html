@@ -117,6 +117,11 @@ main{max-width:720px;margin:0 auto;padding:4px 16px 8px;display:flex;flex-direct
 .pic img{width:84px;height:84px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:10px}
 .pics h4{grid-column:1/-1;margin:0;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .task.seal{background:var(--warn-soft)}
+.parts{display:grid;gap:0;font-size:14px}
+.parts h4{margin:0 0 2px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.parts div{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line);font-variant-numeric:tabular-nums}
+.parts div:last-child{border-bottom:0}
+.parts em{color:var(--muted);font-style:normal}
 .note-box{padding:14px;display:grid;gap:8px}
 .note-box h2{font-size:17px}
 .note-box textarea{width:100%;min-height:64px;font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);resize:vertical}
@@ -217,9 +222,9 @@ main{max-width:720px;margin:0 auto;padding:4px 16px 8px;display:flex;flex-direct
 /* ---------- config ---------- */
 // Versioning: tools/release.mjs writes these three lines, version.json and changelog.json together.
 // APP_VERSION is the build stamp the app compares with version.json to know an update is out.
-const APP_RELEASE="1.3.0";
+const APP_RELEASE="1.4.0";
 const APP_DATE="2026-11-21";
-const APP_VERSION="202611210253";
+const APP_VERSION="202611210405";
 const REPO="Gluminou/helper-duties", BRANCH="log";
 const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const SHORT=["Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -363,6 +368,7 @@ function toggle(id){
 const svgCheck='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>';
 const svgChev='<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
 const mins=t=>t.minutes?`<span class="chip time" aria-label="About ${t.minutes} minutes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${t.minutes} min</span>`:"";
+const roomsChip=t=>t.parts?`<span class="chip plain">${t.parts.length} rooms</span>`:"";
 function thumbs(t){const all=[...t.products,...t.toolImgs].slice(0,4);return all.length?`<span class="thumbs">${all.map(p=>`<img src="img/${p}.jpg" alt="${esc(PIC[p]||p)}" loading="lazy">`).join("")}</span>`:""}
 function details(t){
   const parts=[];
@@ -371,7 +377,8 @@ function details(t){
   (t.notes||"").split("\n").forEach(l=>{if(l.trim())parts.push(`<p>${esc(l.trim().replace(/^\*\s*/,"• "))}</p>`)});
   const pics=(title,list)=>list.length?`<h4>${title}</h4>`+list.map(p=>`<div class="pic"><img src="img/${p}.jpg" alt="" loading="lazy"><span>${esc(PIC[p]||p)}</span></div>`).join(""):"";
   const p=pics("Products",t.products)+pics("Tools",t.toolImgs);
-  return `<div class="more">${parts.length?`<div class="notes">${parts.join("")}</div>`:""}${p?`<div class="pics">${p}</div>`:""}${t.seal?"":`<div class="meta"><span class="chip plain">${freqText(t)}${slotText(t)?": "+slotText(t):""}</span></div>`}</div>`;
+  const rooms=t.parts?`<div class="parts"><h4>Rooms</h4>${t.parts.map(x=>`<div><span>${esc(x.room)}${x.note?` <em>· ${esc(x.note)}</em>`:""}</span><span>${x.minutes} min</span></div>`).join("")}</div>`:"";
+  return `<div class="more">${parts.length?`<div class="notes">${parts.join("")}</div>`:""}${rooms}${p?`<div class="pics">${p}</div>`:""}${t.seal?"":`<div class="meta"><span class="chip plain">${freqText(t)}${slotText(t)?": "+slotText(t):""}</span></div>`}</div>`;
 }
 function taskRow(t,now,canTick){
   const sl=slotFor(t,now); const done=doneIn(t.id,sl.from,sl.to);
@@ -387,7 +394,7 @@ function taskRow(t,now,canTick){
     <button class="check" data-tick="${t.id}" ${(!canTick||earlier)?"disabled":""} aria-label="${done.length?"Done":"Mark done"}: ${esc(t.name)}">${svgCheck}</button>
     <div class="tbody">
       <button class="tname" data-toggle="t:${t.id}" aria-expanded="${open}">${esc(t.name)}</button>
-      <div class="meta">${chip}${mins(t)}${thumbs(t)}</div>
+      <div class="meta">${chip}${mins(t)}${roomsChip(t)}${thumbs(t)}</div>
       ${details(t)}
     </div></div>`;
 }
@@ -472,11 +479,11 @@ function renderDuties(){
   const wk=t=>(t.minutes&&t.perWeek&&!t.monthly)?t.minutes*t.perWeek:0;
   const total=S.all.reduce((a,t)=>a+wk(t),0);
   const rm=S.rooms.map(r=>({r:r.room,m:r.tasks.reduce((a,t)=>a+wk(t),0)})).sort((a,b)=>b.m-a.m); const mx=rm[0].m;
-  const match=t=>!q||[t.name,t.notes,t.tools,t.room,...t.products.map(p=>PIC[p]),...t.toolImgs.map(p=>PIC[p])].join(" ").toLowerCase().includes(q);
+  const match=t=>!q||[t.name,t.notes,t.tools,t.room,...(t.parts||[]).map(x=>x.room+" "+x.note),...t.products.map(p=>PIC[p]),...t.toolImgs.map(p=>PIC[p])].join(" ").toLowerCase().includes(q);
   let list="";
   const card=t=>`<div class="task ${t.seal?"seal":""}" data-open="${S.open["d:"+t.id]?"true":"false"}" style="grid-template-columns:1fr;padding-left:14px">
      <div class="tbody"><button class="tname" data-toggle="d:${t.id}">${esc(t.name)}</button>
-     <div class="meta"><span class="chip">${freqText(t)}</span>${mins(t)}${slotText(t)?`<span class="chip plain">${slotText(t)}</span>`:""}${thumbs(t)}</div>${details(t)}</div></div>`;
+     <div class="meta"><span class="chip">${freqText(t)}</span>${mins(t)}${roomsChip(t)}${slotText(t)?`<span class="chip plain">${slotText(t)}</span>`:""}${thumbs(t)}</div>${details(t)}</div></div>`;
   if(S.dview==="rooms"){
     for(const r of S.rooms){const ts=r.tasks.filter(match);if(!ts.length)continue;
       list+=`<section class="card room"><div class="roomhead" style="cursor:default"><h2>${esc(r.room)}</h2><span class="count">${ts.filter(t=>!t.seal).length} duties</span></div><div class="tasks">${ts.map(card).join("")}</div></section>`}
