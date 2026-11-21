@@ -87,6 +87,8 @@ main{max-width:720px;margin:0 auto;padding:4px 16px calc(96px + var(--safe-b));d
 .chip{font-size:12.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
 .chip.last{background:var(--warn-soft);color:var(--warn)}
 .chip.ok{background:var(--done-soft);color:var(--done)}
+.chip.time{background:none;border:1px solid var(--line);color:var(--ink);display:inline-flex;align-items:center;gap:4px;font-variant-numeric:tabular-nums}
+.chip.time svg{width:13px;height:13px;color:var(--muted)}
 .chip.plain{background:none;border:1px solid var(--line);color:var(--muted);font-weight:400}
 .thumbs{display:flex;gap:4px}
 .thumbs img{width:34px;height:34px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:8px}
@@ -195,7 +197,7 @@ main{max-width:720px;margin:0 auto;padding:4px 16px calc(96px + var(--safe-b));d
 
 <script>
 /* ---------- config ---------- */
-const APP_VERSION="202611161319";
+const APP_VERSION="202611210251";
 const REPO="Gluminou/helper-duties", BRANCH="log";
 const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const SHORT=["Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -338,6 +340,7 @@ function toggle(id){
 /* ---------- rendering ---------- */
 const svgCheck='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>';
 const svgChev='<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+const mins=t=>t.minutes?`<span class="chip time" aria-label="About ${t.minutes} minutes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${t.minutes} min</span>`:"";
 function thumbs(t){const all=[...t.products,...t.toolImgs].slice(0,4);return all.length?`<span class="thumbs">${all.map(p=>`<img src="img/${p}.jpg" alt="${esc(PIC[p]||p)}" loading="lazy">`).join("")}</span>`:""}
 function details(t){
   const parts=[];
@@ -346,7 +349,7 @@ function details(t){
   (t.notes||"").split("\n").forEach(l=>{if(l.trim())parts.push(`<p>${esc(l.trim().replace(/^\*\s*/,"• "))}</p>`)});
   const pics=(title,list)=>list.length?`<h4>${title}</h4>`+list.map(p=>`<div class="pic"><img src="img/${p}.jpg" alt="" loading="lazy"><span>${esc(PIC[p]||p)}</span></div>`).join(""):"";
   const p=pics("Products",t.products)+pics("Tools",t.toolImgs);
-  return `<div class="more">${parts.length?`<div class="notes">${parts.join("")}</div>`:""}${p?`<div class="pics">${p}</div>`:""}${t.minutes?`<div class="meta"><span class="chip plain">About ${t.minutes} min</span><span class="chip plain">${freqText(t)}${slotText(t)?": "+slotText(t):""}</span></div>`:""}</div>`;
+  return `<div class="more">${parts.length?`<div class="notes">${parts.join("")}</div>`:""}${p?`<div class="pics">${p}</div>`:""}${t.seal?"":`<div class="meta"><span class="chip plain">${freqText(t)}${slotText(t)?": "+slotText(t):""}</span></div>`}</div>`;
 }
 function taskRow(t,now,canTick){
   const sl=slotFor(t,now); const done=doneIn(t.id,sl.from,sl.to);
@@ -362,7 +365,7 @@ function taskRow(t,now,canTick){
     <button class="check" data-tick="${t.id}" ${(!canTick||earlier)?"disabled":""} aria-label="${done.length?"Done":"Mark done"}: ${esc(t.name)}">${svgCheck}</button>
     <div class="tbody">
       <button class="tname" data-toggle="t:${t.id}" aria-expanded="${open}">${esc(t.name)}</button>
-      <div class="meta">${chip}${thumbs(t)}</div>
+      <div class="meta">${chip}${mins(t)}${thumbs(t)}</div>
       ${details(t)}
     </div></div>`;
 }
@@ -451,7 +454,7 @@ function renderDuties(){
   let list="";
   const card=t=>`<div class="task ${t.seal?"seal":""}" data-open="${S.open["d:"+t.id]?"true":"false"}" style="grid-template-columns:1fr;padding-left:14px">
      <div class="tbody"><button class="tname" data-toggle="d:${t.id}">${esc(t.name)}</button>
-     <div class="meta"><span class="chip">${freqText(t)}</span>${slotText(t)?`<span class="chip plain">${slotText(t)}</span>`:""}${thumbs(t)}</div>${details(t)}</div></div>`;
+     <div class="meta"><span class="chip">${freqText(t)}</span>${mins(t)}${slotText(t)?`<span class="chip plain">${slotText(t)}</span>`:""}${thumbs(t)}</div>${details(t)}</div></div>`;
   if(S.dview==="rooms"){
     for(const r of S.rooms){const ts=r.tasks.filter(match);if(!ts.length)continue;
       list+=`<section class="card room"><div class="roomhead" style="cursor:default"><h2>${esc(r.room)}</h2><span class="count">${ts.filter(t=>!t.seal).length} duties</span></div><div class="tasks">${ts.map(card).join("")}</div></section>`}
