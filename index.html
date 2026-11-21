@@ -39,7 +39,22 @@ h1,h2{font-family:var(--f-display)}
 .dot.ok{background:var(--done)} .dot.busy{background:var(--warn)} .dot.err{background:var(--miss)}
 .iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer}
 .iconbtn svg{width:20px;height:20px}
-main{max-width:720px;margin:0 auto;padding:4px 16px calc(96px + var(--safe-b));display:flex;flex-direction:column;gap:14px}
+main{max-width:720px;margin:0 auto;padding:4px 16px 8px;display:flex;flex-direction:column;gap:14px}
+.foot{max-width:720px;margin:0 auto;padding:18px 16px calc(150px + var(--safe-b));display:grid;gap:10px;justify-items:center;text-align:center;color:var(--muted);font-size:14px}
+.foot .vline{font-variant-numeric:tabular-nums}
+.foot .vline b{color:var(--ink)}
+.foot .updbtn{min-width:220px}
+.foot details{width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.foot summary{cursor:pointer;font-weight:700;color:var(--ink)}
+.rel{display:grid;gap:2px;padding:10px 0 4px;border-bottom:1px solid var(--line)}
+.rel:last-child{border-bottom:0}
+.rel h4{margin:0;font-size:14.5px;color:var(--ink);font-variant-numeric:tabular-nums}
+.rel h4 span{color:var(--muted);font-weight:400}
+.rel ul{margin:2px 0 0;padding-left:18px;display:grid;gap:2px}
+.updbar{position:fixed;left:12px;right:12px;bottom:calc(74px + var(--safe-b));z-index:7;max-width:560px;margin:0 auto;background:var(--ink);color:var(--surface);border-radius:14px;padding:10px 12px 10px 16px;display:none;align-items:center;gap:10px;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.updbar[data-show="true"]{display:flex}
+.updbar span{flex:1;font-size:14.5px}
+.updbar .btn{background:var(--accent-soft);color:var(--accent)}
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:flex;padding:6px 8px calc(6px + var(--safe-b))}
 .nav button{flex:1;border:0;background:none;padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;border-radius:10px}
 .nav button svg{width:24px;height:24px}
@@ -124,7 +139,7 @@ main{max-width:720px;margin:0 auto;padding:4px 16px calc(96px + var(--safe-b));d
 .g{display:grid;grid-template-columns:minmax(120px,1fr) repeat(6,minmax(30px,44px));gap:3px;padding:0 10px;align-items:stretch}
 .g .hd{font-size:11.5px;font-weight:700;color:var(--muted);text-align:center;padding:4px 0}
 .g .hd.today{color:var(--accent)}
-.g .tn{font-size:13px;padding:4px 4px 4px 2px;line-height:1.25;align-self:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.g .tn{font-size:13px;padding:0 4px 0 2px;margin:4px 0;line-height:1.25;align-self:center;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .cell{border-radius:6px;min-height:30px;display:grid;place-items:center;font-size:11px;font-variant-numeric:tabular-nums;font-weight:700;background:var(--bg);color:var(--muted)}
 .cell.done{background:var(--done-soft);color:var(--done)}
 .cell.miss{background:var(--miss-soft);color:var(--miss)}
@@ -134,6 +149,7 @@ main{max-width:720px;margin:0 auto;padding:4px 16px calc(96px + var(--safe-b));d
 .legend i{width:14px;height:14px;border-radius:4px;display:inline-block}
 .monthly{padding:12px 14px;display:grid;gap:6px;font-size:14.5px}
 .monthly div{display:flex;justify-content:space-between;gap:10px}
+.monthly b{white-space:nowrap}
 
 /* All duties */
 .rules{padding:12px 14px;border-left:4px solid var(--accent)}
@@ -172,6 +188,8 @@ main{max-width:720px;margin:0 auto;padding:4px 16px calc(96px + var(--safe-b));d
 </header>
 
 <main id="view"></main>
+<footer class="foot" id="foot" aria-label="App version and updates"></footer>
+<div class="updbar" id="updbar" data-show="false" role="status"><span id="updbarText"></span><button class="btn" id="updbarBtn">Update now</button></div>
 
 <nav class="nav" aria-label="Sections">
   <button data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="m8 12 3 3 5-6"/></svg>Today</button>
@@ -197,7 +215,11 @@ main{max-width:720px;margin:0 auto;padding:4px 16px calc(96px + var(--safe-b));d
 
 <script>
 /* ---------- config ---------- */
-const APP_VERSION="202611210251";
+// Versioning: tools/release.mjs writes these three lines, version.json and changelog.json together.
+// APP_VERSION is the build stamp the app compares with version.json to know an update is out.
+const APP_RELEASE="1.3.0";
+const APP_DATE="2026-11-21";
+const APP_VERSION="202611210253";
 const REPO="Gluminou/helper-duties", BRANCH="log";
 const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const SHORT=["Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -504,7 +526,7 @@ $("#view").addEventListener("click",e=>{
   if(e.target.id==="sendNote"){const v=$("#noteInput").value.trim(); if(!v) return; $("#noteInput").value=""; queue({op:"note",ts:stamp(new Date()),text:v.slice(0,500)})}
 });
 $("#view").addEventListener("input",e=>{if(e.target.id==="dsearch"){S.dq=e.target.value;render()}});
-$("#refreshBtn").addEventListener("click",()=>{checkVersion();loadAll()});
+$("#refreshBtn").addEventListener("click",()=>{checkVersion("auto");loadAll()});
 $("#settingsBtn").addEventListener("click",()=>{$("#sheet").dataset.open="true";$("#tokenInput").value="";$("#tokenMsg").textContent=S.token?"A key is saved on this phone.":"No key on this phone: view only.";$("#tokenMsg").className="msg"});
 $("#closeSheet").addEventListener("click",()=>$("#sheet").dataset.open="false");
 $("#sheet").addEventListener("click",e=>{if(e.target.id==="sheet")$("#sheet").dataset.open="false"});
@@ -518,22 +540,68 @@ $("#saveToken").addEventListener("click",async()=>{
 });
 $("#removeToken").addEventListener("click",()=>{S.token=null;store.del("hd-token");$("#tokenMsg").textContent="Key removed. This phone is view only.";$("#tokenMsg").className="msg";render();setSync("ok","View only")});
 
-/* ---------- updates ---------- */
-async function checkVersion(){
-  try{const r=await fetch("version.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const j=await r.json();
-    if(j.v&&j.v!==APP_VERSION) location.replace(location.pathname+"?v="+encodeURIComponent(j.v)+location.hash)}catch(e){}
+/* ---------- updates and versions ---------- */
+const U={state:"idle",latest:null,log:null};
+const fmtDate=s=>{const d=new Date(s+"T00:00");return isNaN(d)?s:d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})};
+async function fetchVersion(){const r=await fetch("version.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)throw new Error("version "+r.status);return r.json()}
+async function checkVersion(mode){ // mode: "start", "auto" or "manual"
+  if(mode==="manual"){U.state="checking";renderFoot()}
+  try{
+    const j=await fetchVersion();
+    if(j.v&&j.v!==APP_VERSION){
+      U.latest=j;U.state="available";
+      // On a fresh start, load the new version straight away, unless we already tried for this build.
+      if(mode==="start"&&new URLSearchParams(location.search).get("v")!==j.v&&!S.pending.length){applyUpdate();return}
+    }else if(mode==="manual") U.state="latest";
+  }catch(e){if(mode==="manual")U.state="error"}
+  renderFoot();
 }
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){checkVersion();loadAll()}});
+async function applyUpdate(){
+  U.state="updating";renderFoot();
+  if(S.pending.length&&S.token){try{await Promise.race([flush(),new Promise(r=>setTimeout(r,4000))])}catch(e){}}
+  const v=U.latest?.v||String(Date.now());
+  location.replace(location.pathname+"?v="+encodeURIComponent(v)+location.hash);
+}
+function renderFoot(){
+  if($("#whatsnew")?.open) U.logOpen=true;
+  const L=U.latest, avail=U.state==="available"||U.state==="updating";
+  const msg={checking:"Checking…",latest:"You have the latest version.",error:"Couldn't check. Try again when the phone is online.",updating:"Updating…"}[U.state]||"";
+  const notes=avail&&L?.notes?.length?`<ul style="margin:0;padding-left:18px;text-align:left">${L.notes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`:"";
+  $("#foot").innerHTML=`
+    <div class="vline"><b>Helper Duties</b> version ${esc(APP_RELEASE)} · ${esc(fmtDate(APP_DATE))}</div>
+    ${avail?`<div><b style="color:var(--ink)">Version ${esc(L?.version||"")} is ready</b></div>${notes}`:""}
+    <button class="btn ${avail?"":"ghost"} updbtn" id="updBtn" ${U.state==="checking"||U.state==="updating"?"disabled":""}>${avail?"Update now":"Check for update"}</button>
+    <div class="msg" aria-live="polite">${msg}</div>
+    <details id="whatsnew" ${U.logOpen?"open":""}><summary>What's new</summary><div id="relList">${U.log?relHtml():"<p>Loading…</p>"}</div></details>`;
+  if(U.logOpen&&!U.log) loadLog();
+  $("#updbar").dataset.show=avail?"true":"false";
+  if(avail) $("#updbarText").textContent=`Version ${L?.version||""} is ready`;
+}
+function relHtml(){
+  if(U.log==="error") return "<p>Couldn't load the list. Check the internet connection.</p>";
+  return U.log.map(r=>`<div class="rel"><h4>${esc(r.version)} <span>· ${esc(fmtDate(r.date))}</span></h4><ul>${r.notes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul></div>`).join("");
+}
+async function loadLog(){
+  try{const r=await fetch("changelog.json?v="+APP_VERSION);if(!r.ok)throw 0;U.log=await r.json()}catch(e){U.log="error"}
+  if($("#relList")) $("#relList").innerHTML=relHtml();
+}
+$("#foot").addEventListener("click",e=>{
+  if(e.target.id==="updBtn"){U.state==="available"?applyUpdate():checkVersion("manual")}
+});
+$("#foot").addEventListener("toggle",e=>{if(e.target.id==="whatsnew"){U.logOpen=e.target.open;if(e.target.open&&!U.log)loadLog()}},true);
+$("#updbarBtn").addEventListener("click",applyUpdate);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){checkVersion("auto");loadAll()}});
+setInterval(()=>{if(document.visibilityState==="visible")checkVersion("auto")},900000);
 setInterval(()=>{if(document.visibilityState==="visible"&&!S.pending.length)loadAll()},180000);
 
 /* ---------- start ---------- */
 (async function start(){
-  $("#aboutLine").textContent="App version "+APP_VERSION;
+  $("#aboutLine").textContent=`Version ${APP_RELEASE} (build ${APP_VERSION})`; renderFoot();
   try{
     const r=await fetch("duties.json?v="+APP_VERSION); S.rooms=await r.json();
   }catch(e){$("#view").innerHTML=`<p class="empty">Couldn't load the duty list. Check the internet connection and tap refresh.</p>`;return}
   S.rooms.forEach(r=>r.tasks.forEach(t=>t.room=r.room)); S.all=S.rooms.flatMap(r=>r.tasks); S.byId=Object.fromEntries(S.all.map(t=>[t.id,t]));
-  rebuild(); route(); checkVersion(); loadAll();
+  rebuild(); route(); checkVersion("start"); loadAll();
 })();
 </script>
 </body>

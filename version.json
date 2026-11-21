@@ -1,1 +1,10 @@
-{"v":"202611210251"}
+{
+  "v": "202611210253",
+  "version": "1.3.0",
+  "date": "2026-11-21",
+  "notes": [
+    "Version number and a Check for update button at the bottom of every page.",
+    "When a new version is out, an Update now bar appears.",
+    "What's new list of all versions."
+  ]
+}
